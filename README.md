@@ -1,0 +1,8 @@
+TaskFlow - Smart Offline-First PWA A production-ready SaaS task management system featuring a true offline-first architecture, secure split-token authentication, and automatic data synchronization.
+
+
+Key Features Full CRUD Offline: Create, view, update, and delete tasks without internet connectivity.Secure Auth: JWT-based session management using split Access (15m) and Refresh (1d) tokens stored in HTTP-Only cookies.PWA Standards: Fully installable on Desktop/Mobile with custom maskable icons and an optimized App Shell cache.Intelligent Sync: Automatic background reconciliation using a Sync Queue and Last-Write-Wins (LWW) conflict resolution.UX Extras: Dark mode support, drag-and-drop task ordering, and push notification readiness.🛠 Tech Stack Frontend: React (Vite), Redux Toolkit (State Management), Tailwind CSS (Styling), IndexedDB (Local Storage).Backend: Node.js, Express, Mongoose.Security: Bcryptjs, JWT, Helmet, Express-Rate-Limit.
+
+ Offline Sync Strategy The application uses an Offline-First Architecture:Local Persistence: Every UI action is instantly saved to IndexedDB for zero-latency feedback.Sync Queue: While offline, actions are queued in a specialized sync_queue store.Background Sync: Upon network restoration, the SyncManager processes the queue via a bulk /api/tasks/sync endpoint.Conflict Resolution: The server uses lastModified timestamps to ensure the newest data always wins.
+ 
+ How to Run Backend: cd task-manager-backend && npm install && npm run dev.Frontend: cd task-manager-frontend && npm install && npm run dev.
