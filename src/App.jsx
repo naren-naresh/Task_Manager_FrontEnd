@@ -12,6 +12,7 @@ import { useTheme } from './hooks/useTheme';
 import TaskDetail from './pages/TaskDetail.jsx';
 import { toast, Toaster } from 'react-hot-toast';
 import { authService } from './features/auth/authService.js';
+import PwaPrompt from './components/PwaPrompt.jsx';
 
 function App() {
   const { theme, toggleTheme } = useTheme();
@@ -59,6 +60,7 @@ function App() {
 
   return (
     <div className="min-h-screen transition-colors duration-300 bg-white dark:bg-gray-900">
+      <PwaPrompt />
       <Toaster position="bottom-right" />
       <Router>
         <nav className="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">

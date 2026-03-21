@@ -6,9 +6,10 @@ import App from './App.jsx';
 import './index.css';
 import { initSyncManager } from './services/syncManager.js';
 
-// Initialize the Sync Manager to listen for 'online' events
+// 1. Initialize Sync Logic
 initSyncManager();
 
+// 2. Render App
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>
@@ -17,11 +18,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>
 );
 
-// Register Service Worker for PWA
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('SW Registered!', reg))
-      .catch(err => console.log('SW Register Error:', err));
-  });
-}
+// NOTE: Manual SW registration is removed. 
+// Vite-plugin-pwa handles this automatically in the build step.
