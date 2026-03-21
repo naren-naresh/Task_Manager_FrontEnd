@@ -52,12 +52,19 @@ function App() {
   }
 
   const handleLogout = async () => {
-    await authService.logout();
-    dispatch(logout()); 
-    dispatch(resetTasks()); 
-    await dbService.clearAllData(); 
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include', // MANDATORY to clear cookies in production
+      });
+      
+      // Clear local state and redirect
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
   };
-
   return (
     <div className="min-h-screen transition-colors duration-300 bg-white dark:bg-gray-900">
       <PwaPrompt />
