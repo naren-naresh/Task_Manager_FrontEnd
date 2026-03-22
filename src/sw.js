@@ -1,55 +1,37 @@
+import { precacheAndRoute } from 'workbox-precaching';
+
+// 1. Let Workbox handle the pre-caching of your Vite assets automatically
+// Vite will replace self.__WB_MANIFEST with the actual hashed files during build.
+precacheAndRoute(self.__WB_MANIFEST);
+
 const CACHE_NAME = 'taskflow-prod-v1';
-// List all your core UI assets here
-const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.svg',
-  // Vite assets are hashed, but we can catch them in the fetch listener
-];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Pre-caching App Shell');
-      return cache.addAll(APP_SHELL);
-    })
-  );
-  self.skipWaiting();
-});
+// We can remove the manual 'install' event listener because 
+// precacheAndRoute handles the installation and caching of the app shell for us.
 
+// 2. Keep your manual activation logic to clean up old custom caches if needed
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
       keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
     ))
   );
+  self.clients.claim(); // Take control immediately
 });
 
+// 3. Keep your custom Fetch logic
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 1. BYPASS API CALLS: Let the syncManager/Redux handle data.
-  // This allows offline CRUD to work via IndexedDB[cite: 71, 72].
   if (url.pathname.startsWith('/api/')) return;
-
-  if (
-    url.hostname === 'localhost' && 
-    (url.pathname.includes('@vite/client') || url.search.includes('v='))
-  ) {
-    return;
-  }
-
-  // 2. IGNORE NON-HTTP: Prevents chrome-extension errors
+  if (url.hostname === 'localhost' && (url.pathname.includes('@vite/client') || url.search.includes('v='))) return;
   if (!event.request.url.startsWith('http')) return;
 
-  // 3. STALE-WHILE-REVALIDATE for Static Assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
 
       return fetch(event.request).then((networkResponse) => {
-        // Cache new static assets (JS/CSS/Images) on the fly
         if (networkResponse.ok && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -58,7 +40,6 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch(() => {
-        // If everything fails (offline), return index.html for SPA routes
         if (event.request.mode === 'navigate') {
           return caches.match('/index.html');
         }
@@ -67,14 +48,17 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
+// 4. Your Push Listeners are now safe and will execute!
 self.addEventListener('push', (event) => {
   const data = event.data.json();
 
-  self.registration.showNotification(data.title, {
-    body: data.body,
-    icon: data.icon || '/icon.png',
-    data: data.data || {}
-  });
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || '/logo192.png', // Ensure this points to a valid icon
+      data: data.data || {}
+    })
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {

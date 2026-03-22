@@ -8,7 +8,17 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'prompt', // We will manually prompt the user to update
+      strategies: 'injectManifest',
+      srcDir: 'src',            
+      filename: 'sw.js',
+      registerType: 'autoUpdate', // We will manually prompt the user to update
+      injectManifest: {
+        swDest: 'dist/sw.js', // Ensures the final worker is in the right place
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
+      },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'TaskFlow Task Manager',

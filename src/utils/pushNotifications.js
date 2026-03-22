@@ -14,23 +14,29 @@ function urlBase64ToUint8Array(base64String) {
 
 export const subscribeToNotifications = async () => {
   try {
-    const registration = await navigator.serviceWorker.ready;
-    
-    // 1. Check if already subscribed
-    let subscription = await registration.pushManager.getSubscription();
+    // console.log('[Push] 1. Waiting for Service Worker to be ready...');
 
-    if (!subscription) {
-      // 2. Request Subscription
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VapidPublicKey)
-      });
+    // Use .ready instead of getRegistration for better reliability
+    const registration = await navigator.serviceWorker.ready;
+
+    if (!registration.pushManager) {
+      throw new Error('Push Manager is not supported by this browser/worker.');
     }
 
-    // 3. Send subscription to backend
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY)
+    });
+
+    
+    // Ensure this path matches your WORKING APIs exactly
+    // If your auth APIs use /api/auth, this MUST use /api/notifications
     await apiClient.post('/notifications/subscribe', subscription.toJSON());
-    console.log('[Push] Subscribed successfully');
+    
+    alert("Notifications enabled!");
+
   } catch (error) {
-    console.error('[Push] Subscription failed:', error);
+    console.error('[Push] Subscription flow failed:', error);
+    alert(`Subscription Error: ${error.message}`);
   }
 };

@@ -70,6 +70,26 @@ const Dashboard = () => {
     }));
   };
 
+  const handleNotificationClick = async () => {
+  if (!('Notification' in window)) {
+    alert("This browser does not support notifications.");
+    return;
+  }
+
+  // Explicitly ask for permission on click
+  if (Notification.permission === 'default') {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      subscribeToNotifications();
+    }
+  } else if (Notification.permission === 'granted') {
+    // Already granted, proceed to subscribe
+    subscribeToNotifications();
+  } else {
+    alert("Notifications are blocked. Please enable them in your browser settings.");
+  }
+};
+
   return (
     <div className="max-w-3xl mx-auto bg-gray-50 dark:bg-gray-900 p-4 md:p-8 min-h-[80vh] rounded-2xl shadow-sm">
       <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
@@ -93,7 +113,7 @@ const Dashboard = () => {
             <option value="completed">Completed</option>
           </select>
           <button 
-            onClick={subscribeToNotifications}
+            onClick={handleNotificationClick}
             className="p-2 rounded-lg bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors text-xs font-bold"
           >
             🔔 Enable Reminders
