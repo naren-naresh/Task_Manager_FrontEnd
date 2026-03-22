@@ -11,15 +11,12 @@ const Dashboard = () => {
   const { tasks, isLoading } = useSelector((state) => state.tasks);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'pending', 'completed'
+  const [filterStatus, setFilterStatus] = useState('all');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
 
-   useEffect(() => {
-    // 1. Fetch tasks (now hits IDB then Backend)
+  useEffect(() => {
     dispatch(getTasks());
-
-    // 2. Initialize push notifications
     if ('Notification' in window && Notification.permission !== 'granted') {
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') subscribeToNotifications();
@@ -27,7 +24,6 @@ const Dashboard = () => {
     }
   }, [dispatch]);
 
-  // Handle Task Creation (Offline-First)
   const handleCreateTask = (e) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
@@ -47,7 +43,6 @@ const Dashboard = () => {
     setNewTaskDescription('');
   };
 
-  // Performant Filtering & Searching
   const filteredTasks = useMemo(() => {
     return tasks
       .filter(t => filterStatus === 'all' ? true : t.status === filterStatus)
@@ -55,14 +50,9 @@ const Dashboard = () => {
       .sort((a, b) => a.orderIndex - b.orderIndex);
   }, [tasks, filterStatus, searchQuery]);
 
-  // Optimistic Drag & Drop
   const onDragEnd = (result) => {
     if (!result.destination) return;
-
-    // Pass the IDs of the currently filtered view to safely map them 
-    // back to the global state inside the Thunk.
     const filteredTaskIds = filteredTasks.map(t => t._id);
-
     dispatch(reorderTasks({
       sourceIndex: result.source.index,
       destinationIndex: result.destination.index,
@@ -71,91 +61,94 @@ const Dashboard = () => {
   };
 
   const handleNotificationClick = async () => {
-  if (!('Notification' in window)) {
-    alert("This browser does not support notifications.");
-    return;
-  }
-
-  // Explicitly ask for permission on click
-  if (Notification.permission === 'default') {
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
+    if (!('Notification' in window)) return alert("Browser does not support notifications.");
+    if (Notification.permission === 'default') {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') subscribeToNotifications();
+    } else if (Notification.permission === 'granted') {
       subscribeToNotifications();
+    } else {
+      alert("Notifications are blocked in settings.");
     }
-  } else if (Notification.permission === 'granted') {
-    // Already granted, proceed to subscribe
-    subscribeToNotifications();
-  } else {
-    alert("Notifications are blocked. Please enable them in your browser settings.");
-  }
-};
+  };
 
   return (
-    <div className="max-w-3xl mx-auto bg-gray-50 dark:bg-gray-900 p-4 md:p-8 min-h-[80vh] rounded-2xl shadow-sm">
-      <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Tasks</h1>
-        {/* Search & Filter Controls */}
-        <div className="flex gap-2 w-full md:w-auto">
+    <div className="max-w-4xl mx-auto p-4 md:p-8 min-h-[80vh]">
+      
+      {/* Header & Controls */}
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">My Tasks</h1>
+        
+        {/* Responsive Grid for Controls */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
           <input
             type="text"
             placeholder="Search tasks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="p-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white w-full"
+            className="flex-1 sm:w-64 p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white shadow-sm transition-all"
           />
-          <select 
-            value={filterStatus} 
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="p-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white cursor-pointer"
-          >
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="completed">Completed</option>
-          </select>
-          <button 
-            onClick={handleNotificationClick}
-            className="p-2 rounded-lg bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors text-xs font-bold"
-          >
-            🔔 Enable Reminders
-          </button>
+          <div className="flex gap-3 w-full sm:w-auto">
+            <select 
+              value={filterStatus} 
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="flex-1 sm:flex-none p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white shadow-sm cursor-pointer"
+            >
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="completed">Completed</option>
+            </select>
+            <button 
+              onClick={handleNotificationClick}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-colors text-sm font-bold shadow-sm whitespace-nowrap"
+            >
+              🔔 Reminders
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Create Task Form */}
-      <form onSubmit={handleCreateTask} className="mb-6 flex gap-2">
-        <input
-          type="text"
-          placeholder="What needs to be done?"
-          value={newTaskTitle}
-          onChange={(e) => setNewTaskTitle(e.target.value)}
-          className="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-white transition-all"
-        />
-        <textarea
-          placeholder="Add a description (optional)..."
-          value={newTaskDescription}
-          onChange={(e) => setNewTaskDescription(e.target.value)}
-          className="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-white transition-all resize-none"
-          rows="2"
-        />
+      {/* Unified Create Task Form */}
+      <form onSubmit={handleCreateTask} className="mb-10 bg-white dark:bg-gray-800 p-2 sm:p-3 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-2 sm:gap-3 transition-shadow focus-within:shadow-md">
+        <div className="flex-1 flex flex-col gap-2">
+          <input
+            type="text"
+            placeholder="What needs to be done?"
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            className="w-full p-3 bg-transparent outline-none dark:text-white font-medium text-lg placeholder-gray-400"
+          />
+          <textarea
+            placeholder="Add a description (optional)..."
+            value={newTaskDescription}
+            onChange={(e) => setNewTaskDescription(e.target.value)}
+            className="w-full p-3 pt-0 bg-transparent outline-none dark:text-gray-300 text-sm resize-none placeholder-gray-400/70"
+            rows="1"
+          />
+        </div>
         <button 
           type="submit" 
           disabled={!newTaskTitle.trim()}
-          className="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors"
+          className="bg-indigo-600 text-white px-8 py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all sm:self-stretch mt-2 sm:mt-0 shadow-sm shadow-indigo-200 dark:shadow-none"
         >
           Add Task
         </button>
       </form>
 
+      {/* Task List */}
       {isLoading && tasks.length === 0 ? (
-        <p className="text-center text-gray-500 dark:text-gray-400 py-10">Loading tasks...</p>
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
       ) : (
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="tasks">
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
                 {filteredTasks.length === 0 && !isLoading && (
-                  <div className="text-center text-gray-500 py-8 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl">
-                    No tasks found.
+                  <div className="text-center text-gray-400 dark:text-gray-500 py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-800/50">
+                    <p className="text-lg font-medium">No tasks found.</p>
+                    <p className="text-sm mt-1">Enjoy your free time!</p>
                   </div>
                 )}
                 {filteredTasks.map((task, index) => (

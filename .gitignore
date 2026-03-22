@@ -24,3 +24,5 @@ dist
 *.sln
 *.sw?
 *__tests__
+*tests
+dev-dist
